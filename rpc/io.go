@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"encoding/base64"
 	"encoding/json"
-	"fmt"
 	"io"
 	"net"
 	"os/exec"
@@ -32,7 +31,6 @@ type command struct {
 
 // Command - queues a command to be sent to the remote.
 func (r *Remote) Command(commandID string, commandBody []byte) error {
-	fmt.Println(r)
 	// take the whole command as a JSON string.
 	data, err := json.Marshal(command{commandID, string(commandBody)})
 	if nil != err {
@@ -48,7 +46,7 @@ func (r *Remote) Command(commandID string, commandBody []byte) error {
 	return nil
 }
 
-// Listen - registers a callback to occur on a specified remote commad.
+// Listen - registers a callback to occur on a specified remote command.
 func (r *Remote) Listen(commandID string, listener RemoteListener) {
 	// lock for systems that touch listeners map.
 	// lock for reading and writing because this function writes.
@@ -67,14 +65,15 @@ func (r *Remote) Handler(remoteData []byte) {
 
 	// base64 decode the message
 	data := make([]byte, base64.StdEncoding.DecodedLen(len(remoteData)))
-	_, err := base64.StdEncoding.Decode(data, remoteData)
+	length, err := base64.StdEncoding.Decode(data, remoteData)
 	if nil != err {
 		return
 	}
 
 	// unpack the command + command body into the containing struct.
+	// length is requred because DecodedLen() != Actual decoded len (pads with 0's)
 	cmd := command{}
-	err = json.Unmarshal(data, cmd)
+	err = json.Unmarshal(data[:length], &cmd)
 	if nil != err {
 		return
 	}
@@ -114,8 +113,6 @@ func RemoteReader(callback func([]byte), remoteOut io.ReadCloser) {
 		if err != nil {
 			return
 		}
-
-		fmt.Println(line)
 
 		// asyncronously send it to the client.
 		go callback(line)
