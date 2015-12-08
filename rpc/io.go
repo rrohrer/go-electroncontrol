@@ -25,8 +25,8 @@ type RemoteListener func([]byte)
 
 // wrapper for the JSON commands that are sent over stdin/stdout.
 type command struct {
-	CommandID  string
-	ComandBody string
+	CommandID   string
+	CommandBody string
 }
 
 // Close - closer for Remote.
@@ -86,7 +86,7 @@ func (r *Remote) Handler(remoteData []byte) {
 
 	// call the callback if it exists.
 	if key, ok := r.listeners[cmd.CommandID]; ok {
-		key([]byte(cmd.ComandBody))
+		key([]byte(cmd.CommandBody))
 	}
 }
 
