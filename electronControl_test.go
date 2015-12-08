@@ -33,3 +33,19 @@ func TestBasicLaunch(t *testing.T) {
 	remote.Close()
 	<-time.After(time.Second * 1)
 }
+
+func TestBasicAPI(t *testing.T) {
+	err := Initialize()
+	if nil != err {
+		t.Error(err)
+	}
+
+	SetCommandArguments("c:/sandbox/electroncontrol/app/")
+
+	electron, err := New()
+	if nil != err {
+		t.Error(err)
+	}
+
+	defer electron.Close()
+}

@@ -1,9 +1,11 @@
 package ElectronControl
 
-import "github.com/rrohrer/go-electroncontrol/shell"
+import (
+	"path/filepath"
 
-// Shell - the containing data structure that wraps an instance of electron shell.
-type Shell shell.Instance
+	"github.com/rrohrer/go-electroncontrol/rpc"
+	"github.com/rrohrer/go-electroncontrol/shell"
+)
 
 // electronCommandArguments - sets the arguments to pass into the electron command.
 var electronCommandArguments []string
@@ -29,7 +31,18 @@ func SetCommandArguments(args ...string) {
 	electronCommandArguments = args
 }
 
-// NewShell - launches electronExeName and opens a connection.
-func NewShell() Shell {
-	return Shell{}
+// New - launches electronExeName and opens a connection.
+func New() (*shell.Electron, error) {
+
+	return shell.New(filepath.Join(electronPath, electronExeName), electronCommandArguments...)
+}
+
+// Initialize - Sets up ElectronControl
+func Initialize() error {
+	return rpc.Initialize()
+}
+
+// Shutdown - closes down ElectronControl.
+func Shutdown() {
+	rpc.Shutdown()
 }
