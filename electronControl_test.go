@@ -21,7 +21,6 @@ func TestBasicLaunch(t *testing.T) {
 		t.Error(err)
 	}
 	defer rpc.Shutdown()
-	<-time.After(time.Second * 1)
 
 	remote, err := rpc.Launch("electron", "c:/sandbox/electroncontrol/app/")
 	if nil != err {
@@ -29,7 +28,8 @@ func TestBasicLaunch(t *testing.T) {
 	} else {
 		t.Log("Successfully launched.")
 	}
-	<-time.After(time.Second * 1)
 	remote.Command("window_create", []byte("{'width':800, 'height':800}"))
+	<-time.After(time.Second * 1)
+	remote.Close()
 	<-time.After(time.Second * 1)
 }

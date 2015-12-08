@@ -29,6 +29,12 @@ type command struct {
 	ComandBody string
 }
 
+// Close - closer for Remote.
+func (r *Remote) Close() {
+	r.conn.Close()
+	r.process.Process.Kill()
+}
+
 // Command - queues a command to be sent to the remote.
 func (r *Remote) Command(commandID string, commandBody []byte) error {
 	// take the whole command as a JSON string.
