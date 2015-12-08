@@ -1,9 +1,11 @@
 package rpc
 
 import (
+	"errors"
 	"io"
 	"net"
 	"os/exec"
+	"time"
 
 	"gopkg.in/natefinch/npipe.v2"
 )
@@ -27,7 +29,14 @@ func SetupRemoteIO(remoteIn io.WriteCloser, remoteOut io.ReadCloser, cmd *exec.C
 	output := make(chan []byte)
 
 	// wait for the net connection to happen from Electron.
-	conn := <-incomingConnections
+	// time out if it doesn't connect after 5 seconds.
+	var conn net.Conn
+	select {
+	case c := <-incomingConnections:
+		conn = c
+	case <-time.After(time.Second * 5):
+		return nil, errors.New("Connection to client timed out.")
+	}
 
 	// set up the remote data.
 	remote := Remote{

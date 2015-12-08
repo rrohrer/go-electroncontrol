@@ -8,6 +8,8 @@ import (
 	"github.com/rrohrer/go-electroncontrol/rpc"
 )
 
+var electronAppLocation = "c:/sandbox/electron/electroncontrol/app/"
+
 func TestMain(m *testing.M) {
 	// do test setup here.
 
@@ -22,12 +24,13 @@ func TestBasicLaunch(t *testing.T) {
 	}
 	defer rpc.Shutdown()
 
-	remote, err := rpc.Launch("electron", "c:/sandbox/electroncontrol/app/")
+	remote, err := rpc.Launch("electron", electronAppLocation)
 	if nil != err {
 		t.Error(err)
-	} else {
-		t.Log("Successfully launched.")
+		return
 	}
+	t.Log("Successfully launched.")
+
 	remote.Command("window_create", []byte("{'width':800, 'height':800}"))
 	<-time.After(time.Second * 1)
 	remote.Close()
@@ -40,11 +43,12 @@ func TestBasicAPI(t *testing.T) {
 		t.Error(err)
 	}
 
-	SetCommandArguments("c:/sandbox/electroncontrol/app/")
+	SetCommandArguments(electronAppLocation)
 
 	electron, err := New()
 	if nil != err {
 		t.Error(err)
+		return
 	}
 
 	defer electron.Close()
