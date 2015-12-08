@@ -16,13 +16,20 @@ func TestMain(m *testing.M) {
 }
 
 func TestBasicLaunch(t *testing.T) {
-	remote, err := rpc.Launch("electron", "c:/sandbox/electron/electroncontrol/app/")
+	err := rpc.Initialize()
+	if nil != err {
+		t.Error(err)
+	}
+	defer rpc.Shutdown()
+	<-time.After(time.Second * 1)
+
+	remote, err := rpc.Launch("electron", "c:/sandbox/electroncontrol/app/")
 	if nil != err {
 		t.Error(err)
 	} else {
 		t.Log("Successfully launched.")
 	}
-	<-time.After(time.Second * 5)
+	<-time.After(time.Second * 1)
 	remote.Command("window_create", []byte("{'width':800, 'height':800}"))
-	<-time.After(time.Second * 5)
+	<-time.After(time.Second * 1)
 }

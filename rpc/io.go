@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net"
 	"os/exec"
 	"sync"
 )
@@ -16,29 +17,12 @@ type Remote struct {
 	process   *exec.Cmd
 	listeners map[string]RemoteListener
 	sync.RWMutex
+	conn net.Conn
 }
 
 // RemoteListener - function signature that allows things to listen to commands
 // sent from the remote process.
 type RemoteListener func([]byte)
-
-// SetupRemoteIO - starts the threads that are responsible for handling remote IO.
-func SetupRemoteIO(remoteIn io.WriteCloser, remoteOut io.ReadCloser, cmd *exec.Cmd) (*Remote, error) {
-	// set up the communication channel.
-	output := make(chan []byte)
-
-	// set up the remote data.
-	remote := Remote{
-		outgoing:  output,
-		process:   cmd,
-		listeners: make(map[string]RemoteListener)}
-
-	// set up the reader and writer.
-	go remoteWriter(output, remoteIn)
-	go remoteReader(remote.handler, remoteOut)
-
-	return &remote, nil
-}
 
 // wrapper for the JSON commands that are sent over stdin/stdout.
 type command struct {
@@ -48,7 +32,7 @@ type command struct {
 
 // Command - queues a command to be sent to the remote.
 func (r *Remote) Command(commandID string, commandBody []byte) error {
-
+	fmt.Println(r)
 	// take the whole command as a JSON string.
 	data, err := json.Marshal(command{commandID, string(commandBody)})
 	if nil != err {
@@ -74,8 +58,8 @@ func (r *Remote) Listen(commandID string, listener RemoteListener) {
 	r.listeners[commandID] = listener
 }
 
-// handler - handles a callback from the remote process.
-func (r *Remote) handler(remoteData []byte) {
+// Handler - handles a callback from the remote process.
+func (r *Remote) Handler(remoteData []byte) {
 	// lock for functions touch the listeners map.
 	// only lock for reading because this function only reads.
 	r.RLock()
@@ -101,10 +85,8 @@ func (r *Remote) handler(remoteData []byte) {
 	}
 }
 
-// remoteWriter - writes to the stdIN of the process that was passed in.
-func remoteWriter(output <-chan []byte, remoteIn io.WriteCloser) {
-	defer remoteIn.Close()
-
+// RemoteWriter - writes to the stdIN of the process that was passed in.
+func RemoteWriter(output <-chan []byte, remoteIn io.WriteCloser) {
 	for {
 		data := <-output
 
@@ -120,9 +102,8 @@ func remoteWriter(output <-chan []byte, remoteIn io.WriteCloser) {
 	}
 }
 
-// remoteReader - reads from stdOUT of the process that was passed in.
-func remoteReader(callback func([]byte), remoteOut io.ReadCloser) {
-	defer remoteOut.Close()
+// RemoteReader - reads from stdOUT of the process that was passed in.
+func RemoteReader(callback func([]byte), remoteOut io.ReadCloser) {
 
 	// make a new reader
 	reader := bufio.NewReader(remoteOut)
