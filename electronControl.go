@@ -6,7 +6,7 @@ import "github.com/rrohrer/go-electroncontrol/shell"
 type Shell shell.Instance
 
 // electronCommandArguments - sets the arguments to pass into the electron command.
-var electronCommandArguments string
+var electronCommandArguments []string
 
 // electronExeName - the final step of the command to execute to start electron.
 var electronExeName = "electron.exe"
@@ -25,7 +25,7 @@ func SetExecutableName(name string) {
 }
 
 // SetCommandArguments - sets the command arguments that get passed into electron on launch.
-func SetCommandArguments(args string) {
+func SetCommandArguments(args ...string) {
 	electronCommandArguments = args
 }
 

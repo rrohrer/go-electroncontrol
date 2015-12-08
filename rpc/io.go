@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"io"
 	"os/exec"
 	"sync"
@@ -55,7 +56,7 @@ func (r *Remote) Command(commandID string, commandBody []byte) error {
 	}
 
 	// base64 encode the string.
-	base64Data := []byte{}
+	base64Data := make([]byte, base64.StdEncoding.EncodedLen(len(data)))
 	base64.StdEncoding.Encode(base64Data, data)
 
 	// send the string to the Remote.
@@ -81,7 +82,7 @@ func (r *Remote) handler(remoteData []byte) {
 	defer r.RUnlock()
 
 	// base64 decode the message
-	data := []byte{}
+	data := make([]byte, base64.StdEncoding.DecodedLen(len(remoteData)))
 	_, err := base64.StdEncoding.Decode(data, remoteData)
 	if nil != err {
 		return
@@ -132,6 +133,8 @@ func remoteReader(callback func([]byte), remoteOut io.ReadCloser) {
 		if err != nil {
 			return
 		}
+
+		fmt.Println(line)
 
 		// asyncronously send it to the client.
 		go callback(line)
