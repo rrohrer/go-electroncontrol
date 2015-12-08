@@ -53,7 +53,7 @@ func TestBasicAPI(t *testing.T) {
 	}
 
 	electron.CreateWindow(shell.WindowOptions{Width: 700, Height: 700, Frame: false, Show: true})
-	<-time.After(time.Second * 5)
+	<-time.After(time.Second * 1)
 
 	defer electron.Close()
 }
