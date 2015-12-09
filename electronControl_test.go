@@ -52,7 +52,41 @@ func TestBasicAPI(t *testing.T) {
 		return
 	}
 
-	electron.CreateWindow(shell.WindowOptions{Width: 700, Height: 700, Frame: false, Show: true})
+	window, err := electron.CreateWindow(shell.WindowOptions{Width: 700, Height: 700, Frame: false, Show: true})
+	if nil != err {
+		t.Error(err)
+		return
+	}
+	<-time.After(time.Second * 1)
+	err = window.LoadURL("http://google.com")
+	if nil != err {
+		t.Error(err)
+		return
+	}
+	<-time.After(time.Second * 1)
+	err = window.LoadURL("http://envelopvr.com")
+	if nil != err {
+		t.Error(err)
+		return
+	}
+	<-time.After(time.Second * 1)
+	err = window.LoadURL("http://yahoo.com")
+	if nil != err {
+		t.Error(err)
+		return
+	}
+	<-time.After(time.Second * 1)
+	err = window.LoadURL("http://reddit.com")
+	if nil != err {
+		t.Error(err)
+		return
+	}
+	<-time.After(time.Second * 1)
+	err = window.LoadURL("http://msn.com")
+	if nil != err {
+		t.Error(err)
+		return
+	}
 	<-time.After(time.Second * 1)
 
 	defer electron.Close()

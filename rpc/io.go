@@ -24,7 +24,12 @@ type Remote struct {
 type RemoteListener func([]byte)
 
 // wrapper for the JSON commands that are sent over stdin/stdout.
-type command struct {
+type commandInput struct {
+	CommandID   string
+	CommandBody json.RawMessage
+}
+
+type commandOutput struct {
 	CommandID   string
 	CommandBody string
 }
@@ -38,7 +43,7 @@ func (r *Remote) Close() {
 // Command - queues a command to be sent to the remote.
 func (r *Remote) Command(commandID string, commandBody []byte) error {
 	// take the whole command as a JSON string.
-	data, err := json.Marshal(command{commandID, string(commandBody)})
+	data, err := json.Marshal(commandOutput{commandID, string(commandBody)})
 	if nil != err {
 		return err
 	}
@@ -78,7 +83,7 @@ func (r *Remote) Handler(remoteData []byte) {
 
 	// unpack the command + command body into the containing struct.
 	// length is requred because DecodedLen() != Actual decoded len (pads with 0's)
-	cmd := command{}
+	cmd := commandInput{}
 	err = json.Unmarshal(data[:length], &cmd)
 	if nil != err {
 		return

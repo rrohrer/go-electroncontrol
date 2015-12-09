@@ -68,10 +68,15 @@ func (e *Electron) CreateWindow(options WindowOptions) (*Window, error) {
 // Here are the channels for synchronous window ops
 var windowChannelsInitialized bool
 var windowCreationResponses chan []byte
+var windowLoadResponses chan []byte
 
 // Here are the callbacks that pipe to channels for synchronous window ops.
 func windowCreationCallback(data []byte) {
 	windowCreationResponses <- data
+}
+
+func windowLoadCompletionCallback(data []byte) {
+	windowLoadResponses <- data
 }
 
 // InitializeWindowCallbacks - sets up callbacks and channels for synchronous window operations.
@@ -80,7 +85,33 @@ func InitializeWindowCallbacks(electron *Electron) {
 		windowChannelsInitialized = true
 
 		windowCreationResponses = make(chan []byte)
+		windowLoadResponses = make(chan []byte)
 	}
 
 	electron.Listen("window_create_response", windowCreationCallback)
+	electron.Listen("window_load_complete", windowLoadCompletionCallback)
+}
+
+type loadURLCommand struct {
+	WindowID int
+	URL      string
+}
+
+// LoadURL - Commands the window to load a URL.
+func (w *Window) LoadURL(location string) error {
+	// create the JSON for the loadURL command.
+	c := loadURLCommand{WindowID: w.WindowID, URL: location}
+	jsonData, err := json.Marshal(c)
+	if nil != err {
+		return err
+	}
+
+	w.electron.Command("window_load_url", jsonData)
+
+	select {
+	case <-windowLoadResponses:
+		return nil
+	case <-time.After(time.Second * 30):
+		return errors.New("LoadURL timed out.")
+	}
 }
