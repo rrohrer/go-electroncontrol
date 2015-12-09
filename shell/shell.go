@@ -2,14 +2,17 @@ package shell
 
 import (
 	"errors"
+	"sync"
 
 	"github.com/rrohrer/go-electroncontrol/rpc"
 )
 
 // Electron - the containing data structure that wraps an instance of electron shell.
 type Electron struct {
-	iD     uint
-	remote *rpc.Remote
+	iD            uint
+	activeWindows map[int]*Window
+	remote        *rpc.Remote
+	sync.RWMutex
 }
 
 // ID'd used for electron instances.
@@ -30,7 +33,7 @@ func New(electronLocation string, args ...string) (*Electron, error) {
 	}
 
 	// create the electron instance.
-	electron := &Electron{getNextID(), remote}
+	electron := &Electron{iD: getNextID(), remote: remote, activeWindows: make(map[int]*Window)}
 
 	// setup the responders for callbacks to windows.
 	InitializeWindowCallbacks(electron)

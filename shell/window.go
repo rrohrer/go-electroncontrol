@@ -3,13 +3,23 @@ package shell
 import (
 	"encoding/json"
 	"errors"
+	"sync"
 	"time"
 )
 
+// WindowEventCallback - function signature for window callbacks.
+type WindowEventCallback func([]byte)
+
+// WindowOnCloseCallback - function called when window is closed.
+type WindowOnCloseCallback func()
+
 // Window handle to an electron window.
 type Window struct {
-	WindowID int
-	electron *Electron
+	WindowID       int
+	electron       *Electron
+	listeners      map[string]WindowEventCallback
+	closedCallback WindowOnCloseCallback
+	sync.RWMutex
 }
 
 // WindowOptions - creation options for creating a window with various properties.
@@ -35,6 +45,11 @@ type WindowOptions struct {
 	AcceptFirstMouse bool   `json:"acceptFirstMouse"`
 }
 
+// windowIDCommand - used for the many messages that involve only a WindowID
+type windowIDCommand struct {
+	WindowID int
+}
+
 // CreateWindow - creates a window on the remote shell. Takes a WindowOptions which
 // loosely maps to Electron's window options.
 func (e *Electron) CreateWindow(options WindowOptions) (*Window, error) {
@@ -57,12 +72,34 @@ func (e *Electron) CreateWindow(options WindowOptions) (*Window, error) {
 	}
 
 	// turn the JSON data into a WindowID.
-	window := Window{electron: e}
+	window := Window{electron: e, listeners: make(map[string]WindowEventCallback)}
 	err = json.Unmarshal(response, &window)
 	if nil != err {
 		return nil, err
 	}
+
+	// lock electron so that the active window map can be written to.
+	e.Lock()
+	defer e.Unlock()
+
+	// store the window.
+	e.activeWindows[window.WindowID] = &window
 	return &window, nil
+}
+
+// Close - used to shutdown a window.
+func (w *Window) Close() {
+	// lock electron so that the active window map can be written to.
+	w.electron.Lock()
+	defer w.electron.Unlock()
+
+	// remove this from the active window list.
+	delete(w.electron.activeWindows, w.WindowID)
+
+	wID := windowIDCommand{w.WindowID}
+	jsonData, _ := json.Marshal(wID)
+
+	w.electron.Command("window_close", jsonData)
 }
 
 // Here are the channels for synchronous window ops
@@ -79,6 +116,48 @@ func windowLoadCompletionCallback(data []byte) {
 	windowLoadResponses <- data
 }
 
+type windowListenCallbackPartial struct {
+	WindowID  int
+	MessageID string
+	Message   json.RawMessage
+}
+
+func (e *Electron) windowListenCallback(data []byte) {
+	e.RLock()
+	defer e.RUnlock()
+
+	// pull the partial message out of data
+	partialData := windowListenCallbackPartial{}
+	err := json.Unmarshal(data, &partialData)
+	if nil != err {
+		return
+	}
+
+	// pass the data on to the callback.
+	if key, ok := e.activeWindows[partialData.WindowID]; ok {
+		if key1, ok1 := key.listeners[partialData.MessageID]; ok1 {
+			key1(partialData.Message)
+		}
+	}
+}
+
+func (e *Electron) windowClosedCallback(data []byte) {
+	e.RLock()
+	defer e.RUnlock()
+
+	wID := windowIDCommand{}
+	err := json.Unmarshal(data, &wID)
+	if nil != err {
+		return
+	}
+
+	if key, ok := e.activeWindows[wID.WindowID]; ok {
+		if nil != key.closedCallback {
+			key.closedCallback()
+		}
+	}
+}
+
 // InitializeWindowCallbacks - sets up callbacks and channels for synchronous window operations.
 func InitializeWindowCallbacks(electron *Electron) {
 	if !windowChannelsInitialized {
@@ -90,6 +169,8 @@ func InitializeWindowCallbacks(electron *Electron) {
 
 	electron.Listen("window_create_response", windowCreationCallback)
 	electron.Listen("window_load_complete", windowLoadCompletionCallback)
+	electron.Listen("window_get_subscribed_message", electron.windowListenCallback)
+	electron.Listen("window_closed", electron.windowClosedCallback)
 }
 
 type loadURLCommand struct {
@@ -114,4 +195,66 @@ func (w *Window) LoadURL(location string) error {
 	case <-time.After(time.Second * 30):
 		return errors.New("LoadURL timed out.")
 	}
+}
+
+// listenToMessageCommand - struct that describes the JSON that will be seent to
+// subscribee to messages.
+type listenToMessageCommand struct {
+	WindowID  int
+	MessageID string
+}
+
+// Listen - register's a callback on the WINDOW CONTENT (webpage displayed by Electron)
+func (w *Window) Listen(messageID string, callback WindowEventCallback) error {
+	w.Lock()
+	defer w.Unlock()
+
+	// create the listen command JSON string.
+	listenCommand := listenToMessageCommand{w.WindowID, messageID}
+	jsonCommand, err := json.Marshal(listenCommand)
+	if nil != err {
+		return err
+	}
+
+	// save the callback.
+	w.listeners[messageID] = callback
+
+	// subscribe
+	w.electron.Command("window_subscribe_message", jsonCommand)
+
+	return nil
+}
+
+// sendMessageCommand - filled to send a message to the WINDOW CONTENT.
+type sendMessageCommand struct {
+	WindowID  int
+	MessageID string
+	Message   string
+}
+
+// Message - send a message to the WINDOW CONTENT (webpage displayed by Electron).
+func (w *Window) Message(messageID string, message []byte) error {
+	// create the command.
+	messageCommand := sendMessageCommand{w.WindowID, messageID, string(message)}
+	jsonCommand, err := json.Marshal(messageCommand)
+	if nil != err {
+		return err
+	}
+
+	w.electron.Command("window_send_message", jsonCommand)
+	return nil
+}
+
+// OpenDevTools - opens a developer console on the window in question.
+func (w *Window) OpenDevTools() {
+	commandData := windowIDCommand{w.WindowID}
+	jsonCommandData, _ := json.Marshal(commandData)
+	w.electron.Command("window_open_dev_tools", jsonCommandData)
+}
+
+// CloseDevTools - closes developer tools on the window in question.
+func (w *Window) CloseDevTools() {
+	commandData := windowIDCommand{w.WindowID}
+	jsonCommandData, _ := json.Marshal(commandData)
+	w.electron.Command("window_close_dev_tools", jsonCommandData)
 }

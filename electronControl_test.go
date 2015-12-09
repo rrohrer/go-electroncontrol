@@ -63,6 +63,7 @@ func TestBasicAPI(t *testing.T) {
 		t.Error(err)
 		return
 	}
+	window.OpenDevTools()
 	<-time.After(time.Second * 1)
 	err = window.LoadURL("http://envelopvr.com")
 	if nil != err {
@@ -81,6 +82,7 @@ func TestBasicAPI(t *testing.T) {
 		t.Error(err)
 		return
 	}
+	window.CloseDevTools()
 	<-time.After(time.Second * 1)
 	err = window.LoadURL("http://msn.com")
 	if nil != err {
