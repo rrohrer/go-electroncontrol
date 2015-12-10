@@ -258,3 +258,8 @@ func (w *Window) CloseDevTools() {
 	jsonCommandData, _ := json.Marshal(commandData)
 	w.electron.Command("window_close_dev_tools", jsonCommandData)
 }
+
+// OnClosed - called when the window is closed, either by ELECTRON or the user.
+func (w *Window) OnClosed(callback WindowOnCloseCallback) {
+	w.closedCallback = callback
+}
