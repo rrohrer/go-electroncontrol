@@ -43,6 +43,7 @@ type WindowOptions struct {
 	Show             bool   `json:"show"`
 	Frame            bool   `json:"frame"`
 	AcceptFirstMouse bool   `json:"acceptFirstMouse"`
+	BackgroundColor  string `json:"backgroundColor"`
 }
 
 // windowIDCommand - used for the many messages that involve only a WindowID
