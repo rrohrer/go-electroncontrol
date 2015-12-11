@@ -7,7 +7,7 @@ Golang bindings for electroncontrol
 err := Initialize()
 defer Shutdown()
 
-SetCommandArguments("c:/")
+SetCommandArguments("c:/myapp")
 
 electron, err := New()
 
