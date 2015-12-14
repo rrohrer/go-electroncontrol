@@ -135,8 +135,8 @@ func (e *Electron) windowListenCallback(data []byte) {
 	}
 
 	// pass the data on to the callback.
-	if key, ok := e.activeWindows[partialData.WindowID]; ok {
-		if key1, ok1 := key.listeners[partialData.MessageID]; ok1 {
+	if key, ok := e.activeWindows[partialData.WindowID]; ok && nil != key {
+		if key1, ok1 := key.listeners[partialData.MessageID]; ok1 && nil != key1 {
 			key1(partialData.Message)
 		}
 	}
@@ -152,7 +152,7 @@ func (e *Electron) windowClosedCallback(data []byte) {
 		return
 	}
 
-	if key, ok := e.activeWindows[wID.WindowID]; ok {
+	if key, ok := e.activeWindows[wID.WindowID]; ok && nil != key {
 		if nil != key.closedCallback {
 			key.closedCallback()
 		}
