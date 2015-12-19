@@ -139,7 +139,7 @@ func (e *Electron) windowListenCallback(data []byte) {
 		key.RLock()
 		defer key.RUnlock()
 		if key1, ok1 := key.listeners[partialData.MessageID]; ok1 && nil != key1 {
-			key1(partialData.Message)
+			go key1(partialData.Message)
 		}
 	}
 }
@@ -156,7 +156,7 @@ func (e *Electron) windowClosedCallback(data []byte) {
 
 	if key, ok := e.activeWindows[wID.WindowID]; ok && nil != key {
 		if nil != key.closedCallback {
-			key.closedCallback()
+			go key.closedCallback()
 		}
 	}
 }
