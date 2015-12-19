@@ -136,6 +136,8 @@ func (e *Electron) windowListenCallback(data []byte) {
 
 	// pass the data on to the callback.
 	if key, ok := e.activeWindows[partialData.WindowID]; ok && nil != key {
+		key.RLock()
+		defer key.RUnlock()
 		if key1, ok1 := key.listeners[partialData.MessageID]; ok1 && nil != key1 {
 			key1(partialData.Message)
 		}
