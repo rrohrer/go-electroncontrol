@@ -4,10 +4,13 @@ import "os/exec"
 
 // Launch - launches electron from executableLocation with the arguments
 // provided.
-func Launch(executableLocation string, arguments ...string) (*Remote, error) {
+func Launch(executableLocation, workingDir string, arguments ...string) (*Remote, error) {
 
 	// build the command to execute launching electron.
 	cmd := exec.Command(executableLocation, arguments...)
+	if len(workingDir) > 0 {
+		cmd.Dir = workingDir
+	}
 
 	// hook into stdin and stdout
 	remoteStdin, err := cmd.StdinPipe()

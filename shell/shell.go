@@ -25,9 +25,9 @@ func getNextID() (id uint) {
 }
 
 // New - returns a new Electron instance.
-func New(electronLocation string, args ...string) (*Electron, error) {
+func New(electronLocation, workingDir string, args ...string) (*Electron, error) {
 	// launch the remote instance of electron.
-	remote, err := rpc.Launch(electronLocation, args...)
+	remote, err := rpc.Launch(electronLocation, workingDir, args...)
 	if nil != err {
 		return nil, err
 	}

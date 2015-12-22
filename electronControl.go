@@ -16,6 +16,9 @@ var electronExeName = "electron.exe"
 // electronPath - system path that electron resides in.
 var electronPath string
 
+// electronWorkingDir - workingDir that electron comes from.
+var electronWorkingDir string
+
 // SetPath - sets the path that the system should look for electron in.
 func SetPath(path string) {
 	electronPath = path
@@ -31,10 +34,15 @@ func SetCommandArguments(args ...string) {
 	electronCommandArguments = args
 }
 
+// SetWorkingDir - set the working dir of electron.exe
+func SetWorkingDir(dir string) {
+	electronWorkingDir = dir
+}
+
 // New - launches electronExeName and opens a connection.
 func New() (*shell.Electron, error) {
 
-	return shell.New(filepath.Join(electronPath, electronExeName), electronCommandArguments...)
+	return shell.New(filepath.Join(electronPath, electronExeName), electronWorkingDir, electronCommandArguments...)
 }
 
 // Initialize - Sets up ElectronControl
