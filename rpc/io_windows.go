@@ -60,7 +60,6 @@ func InitializeIO() error {
 	if isInitialized {
 		return nil
 	}
-	isInitialized = true
 
 	// create a listener on the named pipe.
 	remoteL, err := npipe.Listen(pipeName)
@@ -74,6 +73,7 @@ func InitializeIO() error {
 
 	// listen until Closed.
 	go acceptLoop()
+	isInitialized = true
 	return nil
 }
 
