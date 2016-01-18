@@ -25,7 +25,7 @@ func TestBasicLaunch(t *testing.T) {
 	}
 	defer rpc.Shutdown()
 
-	remote, err := rpc.Launch("electron", electronAppLocation)
+	remote, err := rpc.Launch("electron", "", electronAppLocation)
 	if nil != err {
 		t.Error(err)
 		return
@@ -64,12 +64,7 @@ func TestBasicAPI(t *testing.T) {
 		return
 	}
 	window.OpenDevTools()
-	<-time.After(time.Second * 1)
-	err = window.LoadURL("http://envelopvr.com")
-	if nil != err {
-		t.Error(err)
-		return
-	}
+
 	<-time.After(time.Second * 1)
 	err = window.LoadURL("http://yahoo.com")
 	if nil != err {
