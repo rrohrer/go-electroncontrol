@@ -12,11 +12,12 @@ import (
 
 // Remote - holds a connection
 type Remote struct {
-	outgoing  chan<- []byte
-	process   *exec.Cmd
-	listeners map[string]RemoteListener
+	outgoing      chan<- []byte
+	process       *exec.Cmd
+	listeners     map[string]RemoteListener
+	conn          net.Conn
+	shutdownWrite chan bool
 	sync.RWMutex
-	conn net.Conn
 }
 
 // RemoteListener - function signature that allows things to listen to commands
@@ -36,6 +37,7 @@ type commandOutput struct {
 
 // Close - closer for Remote.
 func (r *Remote) Close() {
+	r.shutdownWrite <- true
 	r.conn.Close()
 	r.process.Process.Kill()
 }
@@ -96,19 +98,23 @@ func (r *Remote) Handler(remoteData []byte) {
 }
 
 // RemoteWriter - writes to the stdIN of the process that was passed in.
-func RemoteWriter(output <-chan []byte, remoteIn io.WriteCloser) {
+func RemoteWriter(output <-chan []byte, remoteIn io.WriteCloser, shutdown <-chan bool) {
 	for {
-		data := <-output
+		select {
+		case data := <-output:
+			_, err := remoteIn.Write(data)
+			if nil != err {
+				return
+			}
 
-		_, err := remoteIn.Write(data)
-		if nil != err {
+			_, err = remoteIn.Write([]byte("\n"))
+			if nil != err {
+				return
+			}
+		case <-shutdown:
 			return
 		}
 
-		_, err = remoteIn.Write([]byte("\n"))
-		if nil != err {
-			return
-		}
 	}
 }
 

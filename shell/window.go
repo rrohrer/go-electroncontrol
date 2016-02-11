@@ -145,8 +145,8 @@ func (e *Electron) windowListenCallback(data []byte) {
 }
 
 func (e *Electron) windowClosedCallback(data []byte) {
-	e.RLock()
-	defer e.RUnlock()
+	e.Lock()
+	defer e.Unlock()
 
 	wID := windowIDCommand{}
 	err := json.Unmarshal(data, &wID)
@@ -158,6 +158,8 @@ func (e *Electron) windowClosedCallback(data []byte) {
 		if nil != key.closedCallback {
 			go key.closedCallback()
 		}
+
+		delete(e.activeWindows, wID.WindowID)
 	}
 }
 

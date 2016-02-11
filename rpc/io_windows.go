@@ -40,14 +40,15 @@ func SetupRemoteIO(remoteIn io.WriteCloser, remoteOut io.ReadCloser, cmd *exec.C
 
 	// set up the remote data.
 	remote := Remote{
-		outgoing:  output,
-		process:   cmd,
-		listeners: make(map[string]RemoteListener),
-		conn:      conn}
+		outgoing:      output,
+		process:       cmd,
+		listeners:     make(map[string]RemoteListener),
+		conn:          conn,
+		shutdownWrite: make(chan bool)}
 
 	// set up the remote reader and writer threads.
 	go RemoteReader(remote.Handler, conn)
-	go RemoteWriter(output, conn)
+	go RemoteWriter(output, conn, remote.shutdownWrite)
 
 	// start the read and write threads.
 	return &remote, nil
