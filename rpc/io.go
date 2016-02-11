@@ -55,7 +55,10 @@ func (r *Remote) Command(commandID string, commandBody []byte) error {
 	base64.StdEncoding.Encode(base64Data, data)
 
 	// send the string to the Remote.
-	r.outgoing <- base64Data
+	fn := func() {
+		r.outgoing <- base64Data
+	}
+	go fn()
 	return nil
 }
 
